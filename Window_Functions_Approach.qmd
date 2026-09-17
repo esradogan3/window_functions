@@ -1,0 +1,30 @@
+---
+title: "3B Window Functions"
+author: Esra Dogan, Samantha Mesa
+format: html
+editor: visual
+---
+
+# At what point in each year did each instrument's price first rise above its own year-to-date average and never fall back below it (or the other way around)?
+
+## Introduction
+
+In this assignment, we will use window functions to analyze daily prices for four instruments between 2022 and 2024. Because we needed several instruments covering the same period, we used a simulated dataset generated with a geometric Brownian motion model rather than real market prices. It has one row per trading day per instrument, with the opening, high, low, and closing price along with volume. We treat year-to-date as restarting each calendar year, so the three years in the data give us three separate analyses.
+
+## Planned Approach
+
+We will begin by loading the data into R, making sure the date column is read as a proper date and that the rows are sorted by instrument and date, since window functions depend on the order of the data.
+
+Next we will group the data by instrument and by calendar year, so that every calculation restarts on January 1st. Within each group we will compute two things:
+
+**The Year-to-date average:** This is a running average that includes every trading day from the start of the year up to and including the current day. It grows as the year goes on, so it is a moving target rather than a fixed line.
+
+**The Six Day Moving Average:** This looks only at the current day and the five days before it, so it reacts quickly to recent movement and smooths out single-day spikes.
+
+With those two columns in place, we will mark each day as either above or below its year-to-date average. To answer our question, we will look for the last day in the year on which an instrument was still below its average, and take the day after that as the point where it crossed over for good. We will do the same in the opposite direction to find instruments that dropped below their average and never recovered within that year.
+
+Finally, we will plot the closing price, the year-to-date average, and the six-day moving average for each instrument, and mark the crossover points on the chart so the result is easy to see.
+
+## Anticipated Challenges
+
+Since we are new to window functions, our main concern is getting the grouping right so that the averages restart for each instrument and each year rather than running across the entire dataset. We also expect the first few days of each year to be incomplete, since there are not yet enough observations to fill a six-day window.
