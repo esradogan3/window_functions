@@ -5,26 +5,165 @@ format: html
 editor: visual
 ---
 
-# At what point in each year did each instrument's price first rise above its own year-to-date average and never fall back below it (or the other way around)?
+# At what point in each year did each company's price first rise above its own year-to-date average and never fall back below it (or the other way around)?
 
 ## Introduction
 
-In this assignment, we will use window functions to analyze daily prices for four instruments between 2022 and 2024. Because we needed several instruments covering the same period, we used a simulated dataset generated with a geometric Brownian motion model rather than real market prices. It has one row per trading day per instrument, with the opening, high, low, and closing price along with volume. We treat year-to-date as restarting each calendar year, so the three years in the data give us three separate analyses.
+In this assignment, we will use window functions to analyze daily prices for four companies between 2022 and 2024. Because we needed several instruments covering the same period, we used a simulated data set generated with a geometric Brownian motion model rather than real market prices. It has one row per trading day per instrument, with the opening, high, low, and closing price along with volume. We treat year-to-date as restarting each calendar year, so the three years in the data give us three separate analyses.
 
 ## Planned Approach
 
-We will begin by loading the data into R, making sure the date column is read as a proper date and that the rows are sorted by instrument and date, since window functions depend on the order of the data.
+We will begin by loading the data into R, making sure the date column is read as a proper date and that the rows are sorted by company and date, since window functions depend on the order of the data.
 
-Next we will group the data by instrument and by calendar year, so that every calculation restarts on January 1st. Within each group we will compute two things:
+Next we will group the data by company and by calendar year, so that every calculation restarts on January 1st. Within each group we will compute two things:
 
 **The Year-to-date average:** This is a running average that includes every trading day from the start of the year up to and including the current day. It grows as the year goes on, so it is a moving target rather than a fixed line.
 
 **The Six Day Moving Average:** This looks only at the current day and the five days before it, so it reacts quickly to recent movement and smooths out single-day spikes.
 
-With those two columns in place, we will mark each day as either above or below its year-to-date average. To answer our question, we will look for the last day in the year on which an instrument was still below its average, and take the day after that as the point where it crossed over for good. We will do the same in the opposite direction to find instruments that dropped below their average and never recovered within that year.
+With those two columns in place, we will mark each day as either above or below its year-to-date average. To answer our question, we will look for the last day in the year on which a company was still below its average, and take the day after that as the point where it crossed over for good. We will do the same in the opposite direction to find companies that dropped below their average and never recovered within that year.
 
-Finally, we will plot the closing price, the year-to-date average, and the six-day moving average for each instrument, and mark the crossover points on the chart so the result is easy to see.
+Finally, we will plot the closing price, the year-to-date average, and the six-day moving average for each company, and mark the crossover points on the chart so the result is easy to see.
 
 ## Anticipated Challenges
 
-Since we are new to window functions, our main concern is getting the grouping right so that the averages restart for each instrument and each year rather than running across the entire dataset. We also expect the first few days of each year to be incomplete, since there are not yet enough observations to fill a six-day window.
+Since we are new to window functions, our main concern is getting the grouping right so that the averages restart for each company and each year rather than running across the entire data set. We also expect the first few days of each year to be incomplete, since there are not yet enough observations to fill a six-day window.\>
+
+```{r}
+library(tidyverse)
+
+simulated_stock_prices <- read_csv("https://raw.githubusercontent.com/esradogan3/window_functions/main/simulated_stock_prices.csv")
+
+glimpse(simulated_stock_prices)
+```
+
+```{}
+```
+
+**To see which companies are included in the data set:**
+
+```{r}
+simulated_stock_prices |> count(company)
+```
+
+**Checking if there is a repetitive row:**
+
+```{r}
+simulated_stock_prices |> count(company, date) |> filter(n > 1)
+```
+
+\
+**Converting the date column from character to date type with ymd():\**
+
+```{r}
+simulated_stock_prices <- simulated_stock_prices |>
+  mutate(date = ymd(date)) |>
+  arrange(company, date) 
+```
+
+**Plotting the closing prices to get an overall view before calculating the moving averages:**\
+
+```{r}
+simulated_stock_prices |>
+  ggplot(aes(x = date, y = close, colour = company)) +
+  geom_line() +
+  labs(title = "Closing prices, 2022–2024", x = NULL, y = "Close", colour = NULL) +
+  theme_minimal()
+```
+
+## Calculating Year-to-Date Average
+
+```{r}
+simulated_stock_prices <- simulated_stock_prices |>
+  mutate(year = year(date)) |>
+  group_by(company, year) |>
+  mutate(ytd_avg = cummean(close)) |>
+  ungroup()
+```
+
+**Checking the first rows for one company: on the first day the YTD average should equal the closing price.**\
+
+```{r}
+simulated_stock_prices |>
+  filter(company == "Meta Platforms") |>
+  select(date, close, ytd_avg) |>
+  slice_head(n = 5)
+```
+
+##  Calculating Six-Day-Moving Average
+
+```{r}
+simulated_stock_prices <- simulated_stock_prices |>
+  group_by(company) |>
+  mutate(
+    cum_sum = cumsum(close),
+    moving_avg_6 = (cum_sum - lag(cum_sum, 6, default = 0)) / 6,
+    moving_avg_6 = if_else(row_number() < 6, NA, moving_avg_6)
+  ) |>
+  select(-cum_sum) |>
+  ungroup()
+```
+
+**Checking 6 day moving average:**\
+
+```{r}
+simulated_stock_prices |>
+  filter(company == "Meta Platforms") |>
+  select(date, close, moving_avg_6) |>
+  slice_head(n = 10)
+```
+
+**YTD average on ggplot:**\
+
+```{r}
+simulated_stock_prices |>
+  ggplot(aes(x = date, y = ytd_avg, colour = company)) +
+  geom_line() +
+  labs(
+    title = "Year-to-date average by company",
+    x = NULL, y = "YTD average", colour = NULL
+  ) +
+  theme_minimal()
+```
+
+The year-to-date average resets on the first trading day of each year, which is why the line breaks at each year boundary. \
+\
+**Six Day Moving average on ggplot.**
+
+Each company is shown in its own panel with a free y-axis. Their price levels are very different, so a shared axis would flatten the lower-priced stocks into a straight line and hide their movement.\
+
+```{r}
+simulated_stock_prices|>
+  ggplot(aes(x = date)) +
+  geom_line(aes(y = close)) +
+  geom_line(aes(y = moving_avg_6), colour = "steelblue")+
+  facet_wrap(~company, scales = "free_y") +
+  labs(title = "Six-day moving average against daily closing price", x = NULL, y = "Price") +
+  theme_minimal()
+```
+
+The six-day moving average does not reset, since it always looks back six trading days regardless of the calendar year.\
+
+**Finding the point in each year where each company's closing price rose above its YTD average and stayed above it:**\
+
+```{r}
+simulated_stock_prices <- simulated_stock_prices |>
+  mutate(year = year(date))
+
+last_below <- simulated_stock_prices |>
+  filter(close < ytd_avg) |>
+  group_by(company, year) |>
+  summarise(last_below_date = max(date), .groups = "drop")
+
+last_below
+```
+
+**Note:** The table shows, for each company and year, the first day the closing price rose above its year-to-date average and stayed above it for the remainder of the year. It was found by taking the last day the price was below the average and moving one trading day forward.
+
+## Conclusion
+
+The two window functions answer different questions about the same series. The year-to-date average is an expanding window: it starts fresh at the beginning of each year and grows one observation at a time. Early in the year it moves sharply, but as the year goes on each new day becomes a smaller share of the total, so the line flattens and becomes a slow-moving reference level rather than a reflection of current price. The six-day moving average uses a fixed window that always covers the last six trading days, so it stays close to the price and follows short-term movement while smoothing out day-to-day noise. In other words, the YTD average tells us where a company has been over the year, while the six-day average tells us where it is heading right now.
+
+Comparing the four companies shows that this distinction matters most during sharp moves. When a price rises or falls quickly, the six-day average follows within a few days, while the year-to-date average lags far behind and only gradually catches up.
+
+It is worth noting that this data set is simulated rather than real market data. The results therefore say nothing about how these companies actually performed; they demonstrate how the two window functions behave and how they differ from each other.

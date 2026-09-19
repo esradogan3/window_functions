@@ -24,6 +24,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -73,24 +108,257 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="at-what-point-in-each-year-did-each-instruments-price-first-rise-above-its-own-year-to-date-average-and-never-fall-back-below-it-or-the-other-way-around" class="level1">
-<h1>At what point in each year did each instrument’s price first rise above its own year-to-date average and never fall back below it (or the other way around)?</h1>
+<section id="at-what-point-in-each-year-did-each-companys-price-first-rise-above-its-own-year-to-date-average-and-never-fall-back-below-it-or-the-other-way-around" class="level1">
+<h1>At what point in each year did each company’s price first rise above its own year-to-date average and never fall back below it (or the other way around)?</h1>
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
-<p>In this assignment, we will use window functions to analyze daily prices for four instruments between 2022 and 2024. Because we needed several instruments covering the same period, we used a simulated dataset generated with a geometric Brownian motion model rather than real market prices. It has one row per trading day per instrument, with the opening, high, low, and closing price along with volume. We treat year-to-date as restarting each calendar year, so the three years in the data give us three separate analyses.</p>
+<p>In this assignment, we will use window functions to analyze daily prices for four companies between 2022 and 2024. Because we needed several instruments covering the same period, we used a simulated data set generated with a geometric Brownian motion model rather than real market prices. It has one row per trading day per instrument, with the opening, high, low, and closing price along with volume. We treat year-to-date as restarting each calendar year, so the three years in the data give us three separate analyses.</p>
 </section>
 <section id="planned-approach" class="level2">
 <h2 class="anchored" data-anchor-id="planned-approach">Planned Approach</h2>
-<p>We will begin by loading the data into R, making sure the date column is read as a proper date and that the rows are sorted by instrument and date, since window functions depend on the order of the data.</p>
-<p>Next we will group the data by instrument and by calendar year, so that every calculation restarts on January 1st. Within each group we will compute two things:</p>
+<p>We will begin by loading the data into R, making sure the date column is read as a proper date and that the rows are sorted by company and date, since window functions depend on the order of the data.</p>
+<p>Next we will group the data by company and by calendar year, so that every calculation restarts on January 1st. Within each group we will compute two things:</p>
 <p><strong>The Year-to-date average:</strong> This is a running average that includes every trading day from the start of the year up to and including the current day. It grows as the year goes on, so it is a moving target rather than a fixed line.</p>
 <p><strong>The Six Day Moving Average:</strong> This looks only at the current day and the five days before it, so it reacts quickly to recent movement and smooths out single-day spikes.</p>
-<p>With those two columns in place, we will mark each day as either above or below its year-to-date average. To answer our question, we will look for the last day in the year on which an instrument was still below its average, and take the day after that as the point where it crossed over for good. We will do the same in the opposite direction to find instruments that dropped below their average and never recovered within that year.</p>
-<p>Finally, we will plot the closing price, the year-to-date average, and the six-day moving average for each instrument, and mark the crossover points on the chart so the result is easy to see.</p>
+<p>With those two columns in place, we will mark each day as either above or below its year-to-date average. To answer our question, we will look for the last day in the year on which a company was still below its average, and take the day after that as the point where it crossed over for good. We will do the same in the opposite direction to find companies that dropped below their average and never recovered within that year.</p>
+<p>Finally, we will plot the closing price, the year-to-date average, and the six-day moving average for each company, and mark the crossover points on the chart so the result is easy to see.</p>
 </section>
 <section id="anticipated-challenges" class="level2">
 <h2 class="anchored" data-anchor-id="anticipated-challenges">Anticipated Challenges</h2>
-<p>Since we are new to window functions, our main concern is getting the grouping right so that the averages restart for each instrument and each year rather than running across the entire dataset. We also expect the first few days of each year to be incomplete, since there are not yet enough observations to fill a six-day window.</p>
+<p>Since we are new to window functions, our main concern is getting the grouping right so that the averages restart for each company and each year rather than running across the entire data set. We also expect the first few days of each year to be incomplete, since there are not yet enough observations to fill a six-day window.&gt;</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ dplyr     1.2.1     ✔ readr     2.2.0
+✔ forcats   1.0.1     ✔ stringr   1.6.0
+✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+✔ purrr     1.2.2     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"https://raw.githubusercontent.com/esradogan3/window_functions/main/simulated_stock_prices.csv"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 3128 Columns: 8
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (2): ticker, company
+dbl  (5): open, high, low, close, volume
+date (1): date
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(simulated_stock_prices)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 3,128
+Columns: 8
+$ date    &lt;date&gt; 2022-01-03, 2022-01-04, 2022-01-05, 2022-01-06, 2022-01-07, 2…
+$ ticker  &lt;chr&gt; "META", "META", "META", "META", "META", "META", "META", "META"…
+$ company &lt;chr&gt; "Meta Platforms", "Meta Platforms", "Meta Platforms", "Meta Pl…
+$ open    &lt;dbl&gt; 334.06, 332.05, 351.18, 342.75, 323.30, 337.43, 341.54, 326.77…
+$ high    &lt;dbl&gt; 335.53, 350.96, 353.17, 343.95, 334.95, 345.03, 341.93, 327.77…
+$ low     &lt;dbl&gt; 332.73, 331.01, 332.21, 327.93, 322.87, 337.34, 325.70, 324.28…
+$ close   &lt;dbl&gt; 332.84, 350.77, 332.72, 328.50, 334.41, 343.56, 327.19, 324.51…
+$ volume  &lt;dbl&gt; 14653506, 14355955, 13766479, 21565977, 15139272, 17133292, 15…</code></pre>
+</div>
+</div>
+<pre><code></code></pre>
+<p><strong>To see which companies are included in the data set:</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span> <span class="fu">count</span>(company)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+  company            n
+  &lt;chr&gt;          &lt;int&gt;
+1 Apple            782
+2 Meta Platforms   782
+3 Microsoft        782
+4 NVIDIA           782</code></pre>
+</div>
+</div>
+<p><strong>Checking if there is a repetitive row:</strong></p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span> <span class="fu">count</span>(company, date) <span class="sc">|&gt;</span> <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 0 × 3
+# ℹ 3 variables: company &lt;chr&gt;, date &lt;date&gt;, n &lt;int&gt;</code></pre>
+</div>
+</div>
+<p><br>
+**Converting the date column from character to date type with ymd():**</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="ot">&lt;-</span> simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">ymd</span>(date)) <span class="sc">|&gt;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(company, date) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>Plotting the closing prices to get an overall view before calculating the moving averages:</strong><br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> close, <span class="at">colour =</span> company)) <span class="sc">+</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Closing prices, 2022–2024"</span>, <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Close"</span>, <span class="at">colour =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Window_Functions_Approach_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="calculating-year-to-date-average" class="level2">
+<h2 class="anchored" data-anchor-id="calculating-year-to-date-average">Calculating Year-to-Date Average</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="ot">&lt;-</span> simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">year</span>(date)) <span class="sc">|&gt;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(company, year) <span class="sc">|&gt;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">ytd_avg =</span> <span class="fu">cummean</span>(close)) <span class="sc">|&gt;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>Checking the first rows for one company: on the first day the YTD average should equal the closing price.</strong><br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(company <span class="sc">==</span> <span class="st">"Meta Platforms"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, close, ytd_avg) <span class="sc">|&gt;</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">5</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 3
+  date       close ytd_avg
+  &lt;date&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+1 2022-01-03  333.    333.
+2 2022-01-04  351.    342.
+3 2022-01-05  333.    339.
+4 2022-01-06  328.    336.
+5 2022-01-07  334.    336.</code></pre>
+</div>
+</div>
+</section>
+<section id="calculating-six-day-moving-average" class="level2">
+<h2 class="anchored" data-anchor-id="calculating-six-day-moving-average">Calculating Six-Day-Moving Average</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="ot">&lt;-</span> simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(company) <span class="sc">|&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">cum_sum =</span> <span class="fu">cumsum</span>(close),</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">moving_avg_6 =</span> (cum_sum <span class="sc">-</span> <span class="fu">lag</span>(cum_sum, <span class="dv">6</span>, <span class="at">default =</span> <span class="dv">0</span>)) <span class="sc">/</span> <span class="dv">6</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">moving_avg_6 =</span> <span class="fu">if_else</span>(<span class="fu">row_number</span>() <span class="sc">&lt;</span> <span class="dv">6</span>, <span class="cn">NA</span>, moving_avg_6)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>cum_sum) <span class="sc">|&gt;</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p><strong>Checking 6 day moving average:</strong><br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(company <span class="sc">==</span> <span class="st">"Meta Platforms"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, close, moving_avg_6) <span class="sc">|&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 3
+   date       close moving_avg_6
+   &lt;date&gt;     &lt;dbl&gt;        &lt;dbl&gt;
+ 1 2022-01-03  333.          NA 
+ 2 2022-01-04  351.          NA 
+ 3 2022-01-05  333.          NA 
+ 4 2022-01-06  328.          NA 
+ 5 2022-01-07  334.          NA 
+ 6 2022-01-10  344.         337.
+ 7 2022-01-11  327.         336.
+ 8 2022-01-12  325.         332.
+ 9 2022-01-13  303.         327.
+10 2022-01-14  308.         323.</code></pre>
+</div>
+</div>
+<p><strong>YTD average on ggplot:</strong><br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date, <span class="at">y =</span> ytd_avg, <span class="at">colour =</span> company)) <span class="sc">+</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Year-to-date average by company"</span>,</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"YTD average"</span>, <span class="at">colour =</span> <span class="cn">NULL</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Window_Functions_Approach_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The year-to-date average resets on the first trading day of each year, which is why the line breaks at each year boundary.<br>
+<br>
+<strong>Six Day Moving average on ggplot.</strong></p>
+<p>Each company is shown in its own panel with a free y-axis. Their price levels are very different, so a shared axis would flatten the lower-priced stocks into a straight line and hide their movement.<br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices<span class="sc">|&gt;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> date)) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> close)) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">y =</span> moving_avg_6), <span class="at">colour =</span> <span class="st">"steelblue"</span>)<span class="sc">+</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>company, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Six-day moving average against daily closing price"</span>, <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Price"</span>) <span class="sc">+</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 20 rows containing missing values or values outside the scale range
+(`geom_line()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Window_Functions_Approach_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The six-day moving average does not reset, since it always looks back six trading days regardless of the calendar year.<br>
+</p>
+<p><strong>Finding the point in each year where each company’s closing price rose above its YTD average and stayed above it:</strong><br>
+</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>simulated_stock_prices <span class="ot">&lt;-</span> simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">year</span>(date))</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>last_below <span class="ot">&lt;-</span> simulated_stock_prices <span class="sc">|&gt;</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(close <span class="sc">&lt;</span> ytd_avg) <span class="sc">|&gt;</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(company, year) <span class="sc">|&gt;</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">last_below_date =</span> <span class="fu">max</span>(date), <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>last_below</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 3
+   company         year last_below_date
+   &lt;chr&gt;          &lt;dbl&gt; &lt;date&gt;         
+ 1 Apple           2022 2022-12-05     
+ 2 Apple           2023 2023-12-04     
+ 3 Apple           2024 2024-03-07     
+ 4 Meta Platforms  2022 2022-12-30     
+ 5 Meta Platforms  2023 2023-12-29     
+ 6 Meta Platforms  2024 2024-12-31     
+ 7 Microsoft       2022 2022-06-30     
+ 8 Microsoft       2023 2023-06-05     
+ 9 Microsoft       2024 2024-12-31     
+10 NVIDIA          2022 2022-12-06     
+11 NVIDIA          2023 2023-07-06     
+12 NVIDIA          2024 2024-11-29     </code></pre>
+</div>
+</div>
+<p><strong>Note:</strong> The table shows, for each company and year, the first day the closing price rose above its year-to-date average and stayed above it for the remainder of the year. It was found by taking the last day the price was below the average and moving one trading day forward.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>The two window functions answer different questions about the same series. The year-to-date average is an expanding window: it starts fresh at the beginning of each year and grows one observation at a time. Early in the year it moves sharply, but as the year goes on each new day becomes a smaller share of the total, so the line flattens and becomes a slow-moving reference level rather than a reflection of current price. The six-day moving average uses a fixed window that always covers the last six trading days, so it stays close to the price and follows short-term movement while smoothing out day-to-day noise. In other words, the YTD average tells us where a company has been over the year, while the six-day average tells us where it is heading right now.</p>
+<p>Comparing the four companies shows that this distinction matters most during sharp moves. When a price rises or falls quickly, the six-day average follows within a few days, while the year-to-date average lags far behind and only gradually catches up.</p>
+<p>It is worth noting that this data set is simulated rather than real market data. The results therefore say nothing about how these companies actually performed; they demonstrate how the two window functions behave and how they differ from each other.</p>
 </section>
 </section>
 
